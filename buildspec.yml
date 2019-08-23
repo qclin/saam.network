@@ -1,0 +1,7 @@
+version: 0.1
+
+phase:
+  install:
+    commands:
+      - npm install
+      

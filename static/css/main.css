@@ -1,0 +1,47 @@
+#thank-you{
+  display: none;
+  width: 50%;
+  padding: 2em;
+}
+form#subscribeForm{
+  margin: 0 auto;
+  max-width: 300px;
+  padding-top: 5em;
+}
+#introduction{
+  max-width: 780px;
+  margin: 0 auto;
+  position: relative;
+}
+#introduction div {
+  position: absolute;
+  right: 0;
+}
+#introduction span{
+  font-size: 24px;
+  text-align: center;
+}
+#introduction h1{
+  font-size: 12em;
+  font-family: 'Nanum Gothic';
+  margin: 0;
+}
+
+input:focus {
+  border-bottom: 1px solid  #607d8b !important;
+  box-shadow: 0 1px 0 0  #607d8b !important;
+}
+label.active {
+  color: #607d8b !important;
+}
+
+
+.btn{
+  background-color: transparent;
+  color: #607d8b;
+}
+
+.btn:hover{
+  background-color: #607d8b;
+  color: #fff;
+}

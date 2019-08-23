@@ -1,0 +1,119 @@
+# deprecated 
+
+service: saam2
+app: saam
+org: qclin
+
+plugins:
+  - serverless-s3-sync
+
+custom:
+  hostedZoneName: serverless-saam.io
+  # https://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
+  aliasHostedZoneId: Z21DNDUVLTQW6Q    # EU (Frankfurt)
+  aliasDNSName: s3-website.eu-central-1.amazonaws.com
+  siteName: ${self:custom.hostedZoneName}
+  s3Sync:
+    - bucketName: serverless-saam.io
+      localDir: static
+
+provider:
+  name: aws
+  runtime: nodejs10.x
+  stage: dev
+  profile: serverless-admin
+  stackTags:
+    serverless:servess: ${self:service}
+  environment:
+    EMAIL_TABLE: mtml-emails
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource:
+        - "arn:aws:dynamodb:eu-central-1:*:table/mtml-emails*"
+
+resources:
+  Resources:
+    StaticSite:
+      Type: AWS::S3::Bucket
+      Properties:
+        AccessControl: PublicRead
+        BucketName: ${self:custom.siteName}
+        WebsiteConfiguration:
+          IndexDocument: index.html
+          ErrorDocument: index.html
+    StaticSiteS3BucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket:
+          Ref: StaticSite
+        PolicyDocument:
+          Statement:
+            - Sid: PublicReadGetObject
+              Effect: Allow
+              Principal: "*"
+              Action:
+                -s3:PublicReadGetObject
+              Resource:
+                Fn::Join: [
+                "", [
+                "arn:aws:s3:::",
+                {"Ref": "StaticSite"}, "/*"
+                ]
+                ]
+    DnsRecord:
+      Type: "AWS::Route53::RecordSet"
+      Properties:
+        AliasTarget:
+          DNSName: ${self:custom.aliasDNSName}
+          HostedZomeId: ${self:custom.aliasHostedZoneId}
+        HostedZoneName: ${self:custom.siteName}
+        Name:
+          Ref: StaticSite
+        Type: 'A'
+    EmailDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: email
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: email
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 2
+          WriteCapacityUnits: 2
+        TableName: mtml-emails
+
+  Outputs:
+    StaticSiteS3BucketName:
+      Value:
+        'Ref': StaticSite
+    StaticSiteS3BucketDomainName:
+      Value:
+        Fn::GetAtt:
+          - StaticSite
+          - DomainName
+    StaticSiteS3BucketWebsiteURL:
+      Value:
+        Fn::GetAtt:
+          - StaticSite
+          - WebsiteURL
+
+functions:
+  confirm:
+    handler: mailer.email
+    events:
+      - http:
+          path: email
+          method: post
+          cors: true
